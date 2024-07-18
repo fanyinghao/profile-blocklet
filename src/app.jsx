@@ -1,4 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from '@arcblock/ux/lib/Theme';
+import { LocaleProvider } from '@arcblock/ux/lib/Locale/context';
+
+import { SessionProvider } from './libs/session';
+import { translations } from './locales';
 
 import Home from './pages/home';
 
@@ -18,8 +23,14 @@ export default function WrappedApp() {
   const basename = window?.blocklet?.prefix || '/';
 
   return (
-    <Router basename={basename}>
-      <App />
-    </Router>
+    <ThemeProvider>
+      <LocaleProvider translations={translations}>
+        <SessionProvider serviceHost={basename}>
+          <Router basename={basename}>
+            <App />
+          </Router>
+        </SessionProvider>
+      </LocaleProvider>
+    </ThemeProvider>
   );
 }

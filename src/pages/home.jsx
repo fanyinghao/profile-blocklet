@@ -1,47 +1,53 @@
-import { useState } from 'react';
-import reactLogo from '../assets/react.svg';
-import blockletLogo from '../assets/blocklet.svg';
-import viteLogo from '../assets/vite.svg';
+import { useEffect, useState } from 'react';
+import { useSessionContext } from '../libs/session';
+
+import Profile from '../components/profile';
+import EditableProfile from '../components/edit';
 import './home.css';
-import api from '../libs/api';
 
 function Home() {
-  const [count, setCount] = useState(0);
+  const [user, setUser] = useState({
+    avatar: 'https://via.placeholder.com/150',
+    name: '',
+    email: '',
+    phone: '',
+  });
+  const [openEdit, setOpenEdit] = useState(false);
+  const { api, connectApi } = useSessionContext();
 
-  async function getApiData() {
-    const { data } = await api.get('/api/data');
-    const { message } = data;
-    alert(`Message from api: ${message}`);
-  }
+  useEffect(() => {
+    api.get(`/api/user?did=${'1234'}`).then((res) => {
+      setUser(res.data);
+    });
+  }, [api]);
+
+  const requestProfile = () => {
+    const action = 'request-profile';
+    connectApi.open({
+      action,
+    });
+  };
+
+  const handleSubmit = (ret) => {
+    setUser({ ...user, ...ret });
+    setOpenEdit(false);
+    api.post('/api/profile', { ...user, ...ret, did: '1234' }).catch((e) => {
+      logger.error('err', e);
+    });
+  };
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-        <a href="https://www.arcblock.io/docs/blocklet-developer/getting-started" target="_blank" rel="noreferrer">
-          <img src={blockletLogo} className="logo blocklet" alt="Blocklet logo" />
-        </a>
-      </div>
-      <h1>Vite + React + Blocklet</h1>
-      <div className="card">
-        <button type="button" onClick={() => setCount((currentCount) => currentCount + 1)}>
-          count is {count}
-        </button>
-        <br />
-        <br />
-        <button type="button" onClick={getApiData}>
-          Get API Data
-        </button>
-        <p>
-          Edit <code>src/app.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
+      {!openEdit && (
+        <Profile user={{ avatar: 'https://via.placeholder.com/150', ...user }} onClick={() => setOpenEdit(true)} />
+      )}
+      {openEdit && (
+        <EditableProfile
+          user={{ avatar: 'https://via.placeholder.com/150', ...user }}
+          onSubmit={handleSubmit}
+          onConnect={requestProfile}
+        />
+      )}
     </>
   );
 }

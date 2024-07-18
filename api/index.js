@@ -6,7 +6,9 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const fallback = require('@blocklet/sdk/lib/middlewares/fallback');
 
+const authRoutes = require('./routes/auth');
 const { name, version } = require('../package.json');
+const sequelize = require('./libs/database');
 const logger = require('./libs/logger');
 
 const app = express();
@@ -18,6 +20,8 @@ app.use(express.urlencoded({ extended: true, limit: '1 mb' }));
 app.use(cors());
 
 const router = express.Router();
+
+authRoutes.init(router);
 router.use('/api', require('./routes'));
 
 app.use(router);
@@ -38,10 +42,18 @@ if (isProduction) {
 
 const port = parseInt(process.env.BLOCKLET_PORT, 10);
 
-const server = app.listen(port, (err) => {
-  if (err) throw err;
-  logger.info(`> ${name} v${version} ready on ${port}`);
-});
+let server;
+sequelize
+  .sync()
+  .then(() => {
+    server = app.listen(port, (err) => {
+      if (err) throw err;
+      logger.info(`> ${name} v${version} ready on ${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Unable to connect to the database:', error);
+  });
 
 module.exports = {
   app,
